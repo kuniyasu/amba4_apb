@@ -17,7 +17,7 @@ public:
 	sc_in<bool> clk;
 	sc_in<bool> nrst;
 
-	apb4_port<32U,32U,TLM2AT> port;
+	apb4_port<32U,32U,TLM2LT> port;
 
 	SC_HAS_PROCESS(InitiatorDUT);
 	InitiatorDUT(const sc_module_name name):sc_module(name){
@@ -30,7 +30,7 @@ public:
 	sc_in<bool> clk;
 	sc_in<bool> nrst;
 
-	apb4_export<32U,32U,TLM2AT> ex_port;
+	apb4_export<32U,32U,TLM2LT> ex_port;
 
 	SC_HAS_PROCESS(TargetDUT);
 	TargetDUT(const sc_module_name name):sc_module(name){
@@ -45,7 +45,7 @@ public:
 
 	InitiatorDUT initiatorDUT;
 	TargetDUT targetDUT;
-	apb4_simple_bus<32U,32U,TLM2AT> bus;
+	apb4_simple_bus<32U,32U,TLM2LT> bus;
 
 	SC_HAS_PROCESS(TOP);
 	TOP(const sc_module_name name):sc_module(name),
