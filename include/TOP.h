@@ -10,6 +10,8 @@
 
 #include <systemc.h>
 
+#include "amba4_apb_if.h"
+
 class TOP : public sc_module{
 public:
 	TOP(const sc_module_name name):sc_module(name){
