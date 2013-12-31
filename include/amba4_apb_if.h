@@ -63,7 +63,7 @@ class apb4_port:public tlm_initiator_socket<BUSWIDTH>, public tlm_bw_transport_i
 public:
 	typedef tlm_initiator_socket<BUSWIDTH> base_type;
 	apb4_port(const sc_module_name name=sc_gen_unique_name("apb4_port")):base_type(name){
-		m_export(*this);
+		(base_type::get_base_export())(*this);
 	}
 
 	virtual tlm::tlm_sync_enum nb_transport_bw( tlm::tlm_generic_payload& trans, tlm::tlm_phase &phase, sc_time& time ){
@@ -83,18 +83,11 @@ class apb4_export:public tlm_target_socket<BUSWIDTH>, public tlm_fw_transport_if
 public:
 	typedef tlm_target_socket<BUSWIDTH> base_type;
 	apb4_export(const sc_module_name name=sc_gen_unique_name("apb4_export")):base_type(name){
-		m_port(*this);
+		(base_type::get_base_export())(*this);
 	}
 
 	void b_transport( tlm::tlm_generic_payload &trans, sc_time &time ) {
-	    unsigned int address = static_cast<unsigned int>(trans.get_address());
-	    unsigned int *data_ptr = reinterpret_cast<unsigned int*>(trans.get_data_ptr());
-
-	    unsigned int idx = address/4;
-
 	    trans.set_response_status( tlm::TLM_OK_RESPONSE );
-        //trans.set_response_status( tlm::TLM_ADDRESS_ERROR_RESPONSE  );
-
 	}
 
 	tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload &trans, tlm::tlm_phase &phase, sc_time &time ){
@@ -110,6 +103,42 @@ public:
 
 	bool get_direct_mem_ptr( tlm::tlm_generic_payload &trans, tlm::tlm_dmi& dmi){
 	    return false; // DMI not supported
+	}
+};
+
+template<unsigned int ADWIDTH, unsigned int BUSWIDTH, class MODE>
+class apb4_simple_bus: public tlm_fw_transport_if<>, public tlm_bw_transport_if<>{
+public:
+	apb4_base_export<ADWIDTH,BUSWIDTH,MODE> initiator_port;
+	apb4_base_port<ADWIDTH,BUSWIDTH,MODE> target_port;
+
+	apb4_simple_bus(const sc_module_name name=sc_gen_unique_name("apb4_simple_bus")):initiator_port("initiator_port"),target_port("target_port"){
+		initiator_port(*this);
+		target_port(*this);
+	}
+
+	void b_transport( tlm::tlm_generic_payload &trans, sc_time &time ) {
+		target_port->b_transport(trans,time);
+	}
+
+	tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload &trans, tlm::tlm_phase &phase, sc_time &time ){
+		return target_port->nb_transport_fw(trans,phase,time);
+	}
+
+	unsigned int transport_dbg( tlm::tlm_generic_payload &trans ){
+		return target_port->transport_dbg(trans);
+	}
+
+	bool get_direct_mem_ptr( tlm::tlm_generic_payload &trans, tlm::tlm_dmi& dmi){
+		return target_port->get_direct_mem_ptr(trans,dmi);
+	}
+
+	virtual tlm::tlm_sync_enum nb_transport_bw( tlm::tlm_generic_payload& trans, tlm::tlm_phase &phase, sc_time& time ){
+		return initiator_port->nb_transport_bw(trans,phase,time);
+	}
+
+	virtual void invalidate_direct_mem_ptr( sc_dt::uint64 a, sc_dt::uint64 b){
+		initiator_port->invalidate_direct_mem_ptr(a,b);
 	}
 };
 
