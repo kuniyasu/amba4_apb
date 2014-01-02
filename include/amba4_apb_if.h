@@ -16,8 +16,8 @@ class PIN{};
 class TLM2LT{};
 class TLM2AT{};
 
-#define TR_NAME(_name) (std::string(name())+"."+std::string(_name)).c_str()
-#define PIN_NAME(bname,_name_) (std::string(bname)+"."+std::string(_name_)).c_str()
+#define TR_NAME(_name) (std::string(name())+"_"+std::string(_name)).c_str()
+#define PIN_NAME(bname,_name_) (std::string(bname)+"_"+std::string(_name_)).c_str()
 
 template<unsigned int ADWIDTH, unsigned int BUSWIDTH> class apb4_interface;
 template<unsigned int ADWIDTH, unsigned int BUSWIDTH> class apb4_base_chain;
@@ -73,8 +73,8 @@ public:
 	pready(PIN_NAME(name,"pready")),
 	pstrb(PIN_NAME(name,"pstrb")),
 	pwdata(PIN_NAME(name,"pwdata")),
-	prdata(	PIN_NAME(name,"prdata")),
-	pslverr( PIN_NAME(name,"pslverr")){}
+	prdata(PIN_NAME(name,"prdata")),
+	pslverr(PIN_NAME(name,"pslverr")){}
 
 };
 
@@ -108,8 +108,8 @@ public:
 	pready(PIN_NAME(name,"pready")),
 	pstrb(PIN_NAME(name,"pstrb")),
 	pwdata(PIN_NAME(name,"pwdata")),
-	prdata(	PIN_NAME(name,"prdata")),
-	pslverr( PIN_NAME(name,"pslverr")){}
+	prdata(PIN_NAME(name,"prdata")),
+	pslverr(PIN_NAME(name,"pslverr")){}
 
 
 	void bind(apb4_base_chain<ADWIDTH,BUSWIDTH>& c){
@@ -168,8 +168,8 @@ public:
 	pready(PIN_NAME(name,"pready")),
 	pstrb(PIN_NAME(name,"pstrb")),
 	pwdata(PIN_NAME(name,"pwdata")),
-	prdata(	PIN_NAME(name,"prdata")),
-	pslverr( PIN_NAME(name,"pslverr")){}
+	prdata(PIN_NAME(name,"prdata")),
+	pslverr(PIN_NAME(name,"pslverr")){}
 
 	void bind(apb4_base_chain<ADWIDTH,BUSWIDTH>& c){
 		psel(c.psel);
@@ -399,36 +399,52 @@ public:
 	void bus_thread(){
 		{
 			apb_reset();
-			base_class::pready  = true;
+			base_class::pready  = false;
 			base_class::prdata  = data_type();
 			base_class::pslverr = false;
 			wait();
 		}
 
 		while( true ){
-			base_class::pready = true;
-			wait();
-
-			while( base_class::psel.read() == false) wait();
-			base_class::pready = false;
-			prot_type prot = base_class::pprot.read();
-			bool write = base_class::pwrite.read();
-			address_type addr = base_class::paddr.read();
-			strb_type strb = base_class::pstrb.read();
-			data_type wdata = base_class::pwdata.read();
+			prot_type prot = prot_type();
+			bool write = false;
+			address_type addr = address_type();
+			strb_type strb = strb_type();
+			data_type wdata = data_type();
 			data_type rdata = data_type();
 			bool slverr = false;
+
+
+			{
+				base_class::pready = true;
+				wait();
+
+				while( base_class::psel.read() == false) wait();
+				base_class::pready = false;
+				prot = base_class::pprot.read();
+				write = base_class::pwrite.read();
+				addr = base_class::paddr.read();
+				strb = base_class::pstrb.read();
+				wdata = base_class::pwdata.read();
+				rdata = data_type();
+				slverr = false;
+			}
 
 			if( write == true ){
 				slverr = apb_write(prot, addr, strb, wdata);
 			}else{
 				slverr = apb_read(prot, addr, rdata);
-				base_class::prdata = rdata;
 			}
 
-			base_class::pready = true;
-			base_class::pslverr = slverr;
-			wait();
+
+			{
+				base_class::prdata = rdata;
+				base_class::pready = true;
+				base_class::pslverr = slverr;
+				wait();
+				base_class::pready = false;
+			}
+
 		}
 	}
 };
