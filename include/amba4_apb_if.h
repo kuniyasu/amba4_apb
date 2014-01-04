@@ -221,42 +221,53 @@ public:
 	}
 
 	virtual bool apb_write(const prot_type& prot, const address_type& addr, const strb_type& strb, const data_type& dt){
-		base_class::psel = true;
-		base_class::penable = false;
-		base_class::paddr = addr;
-		base_class::pwrite = true;
-		base_class::pstrb = strb;
-		base_class::pwdata = dt;
-		base_class::pprot = prot;
-		wait();
+		bool slverr = false;
+		{
+			base_class::psel = true;
+			base_class::penable = false;
+			base_class::paddr = addr;
+			base_class::pwrite = true;
+			base_class::pstrb = strb;
+			base_class::pwdata = dt;
+			base_class::pprot = prot;
+			wait();
 
-		base_class::penable = true;
-		wait();
+			base_class::penable = true;
+			wait();
 
-		while( base_class::pready.read() == false) wait();
-		base_class::psel = false;
-		base_class::penable = false;
-		return base_class::pslverr.read();
+			while( base_class::pready.read() == false) wait();
+			base_class::psel = false;
+			base_class::penable = false;
+			slverr = base_class::pslverr.read();
+		}
+
+		return slverr;
 	}
 
 	virtual bool apb_read(const prot_type& prot, const address_type& addr, data_type& dt){
-		base_class::psel = true;
-		base_class::penable = false;
-		base_class::paddr = addr;
-		base_class::pwrite = false;
-		base_class::pprot = prot;
-		//base_class::pstrb = strb_type();
-		//base_class::pwdata = data_type();
-		wait();
+		bool slverr = false;
 
-		base_class::penable = true;
-		wait();
+		{
+			base_class::psel = true;
+			base_class::penable = false;
+			base_class::paddr = addr;
+			base_class::pwrite = false;
+			base_class::pprot = prot;
+			//base_class::pstrb = strb_type();
+			//base_class::pwdata = data_type();
+			wait();
 
-		while( base_class::pready.read() == false) wait();
-		base_class::psel = false;
-		base_class::penable = false;
-		dt = base_class::prdata.read();
-		return base_class::pslverr.read();
+			base_class::penable = true;
+			wait();
+
+			while( base_class::pready.read() == false) wait();
+			base_class::psel = false;
+			base_class::penable = false;
+			dt = base_class::prdata.read();
+			slverr =  base_class::pslverr.read();
+		}
+
+		return slverr;
 	}
 
 	void bind(apb4_base_chain<ADWIDTH,BUSWIDTH>& c){
@@ -600,7 +611,7 @@ public:
 	sc_in<bool> pclk;
 	sc_in<bool> nreset;
 
-	apb4_export(const sc_module_name name=sc_gen_unique_name("apb4_export")):base_type(name){
+	apb4_export(const sc_module_name name=sc_gen_unique_name("apb4_export")):base_type(name),pclk("pclk"){
 		(base_type::get_base_export())(*this);
 	}
 
