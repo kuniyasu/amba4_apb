@@ -12,8 +12,8 @@
 
 #include "amba4_apb_if.h"
 
-#define ioMode TLM2LT
-//#define ioMode PIN
+//#define ioMode TLM2LT
+#define ioMode PIN
 
 
 class InitiatorDUT:public sc_module{
@@ -90,6 +90,11 @@ public:
 
 		SC_THREAD(timeout_thread);
 		end_module();
+	}
+
+	void set_trace(sc_trace_file* tf){
+		sc_trace(tf, clk,  clk.name());
+		sc_trace(tf, nrst, nrst.name());
 	}
 
 	void timeout_thread(){

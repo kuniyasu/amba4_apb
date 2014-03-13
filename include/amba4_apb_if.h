@@ -578,6 +578,11 @@ public:
 		 sc_time time;
 
 		 trans.is_write();
+		 trans.set_address(ad);
+
+		 uint64 data = dt;
+		 trans.set_data_ptr( reinterpret_cast<unsigned char*>(&data) );
+
 		 (*this)->b_transport(trans,time);
 
 		 if( trans.get_response_status() == TLM_ADDRESS_ERROR_RESPONSE ){
